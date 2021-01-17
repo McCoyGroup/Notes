@@ -1,6 +1,6 @@
 ---
 layout: home
-sidebar_visible: true
+sidebar_visible: false
 ---
 
 # Where am I?

@@ -1,6 +1,6 @@
 # Setup McCoy Group config
 title: McCoy Group Notes
-description: References, resources, and tutorials for the study of large amplitude molecular motions
+description: Little notes and potentially useful bits of info
 url: "https://mccoygroup.github.io/Notes" # the base hostname & protocol for your site, e.g. http://example.com
 icon: favicon.png
 github_username:  McCoyGroup
