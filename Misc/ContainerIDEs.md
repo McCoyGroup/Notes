@@ -416,4 +416,4 @@ rich prototyping interface before you set up your `sbatch` jobs.
 ![jupyter-screenshot](img/jupyter-screenshot.png){:max-width="700px" width="100%"}
 
 ---
-[Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/gh-pages/notes/ContainerIDEs.md)
+[Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/gh-pages/Misc/ContainerIDEs.md)

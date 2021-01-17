@@ -8,10 +8,12 @@ sidebar_visible: false
 This site just exists to accumulate miscellaneous notes in a blog-like format
 for ease of sharing. 
 
+[Add A Page!](https://github.com/McCoyGroup/Notes/new/master)
+
 ### Index
 
-* [IDEs in Container Land](notes/ContainerIDEs.md)
-* [McEnv, a Simple Environment-Managed Container](notes/McEnv.md)
+* [IDEs in Container Land](Misc/ContainerIDEs.md)
+* [McEnv, a Simple Environment-Managed Container](Misc/McEnv.md)
 
 ---
 [Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/gh-pages/index.md)
