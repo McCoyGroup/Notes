@@ -13,7 +13,7 @@ for ease of sharing.
 ### Index
 
 * [IDEs in Container Land](Misc/ContainerIDEs.md)
-* [McEnv, a Simple Environment-Managed Container](Misc/McEnv.md)
+* [McEnv, a Simple Environment Container](Misc/McEnv.md)
 
 ---
-[Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/gh-pages/index.md)
+[Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/master/index.md)
