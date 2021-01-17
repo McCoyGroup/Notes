@@ -1,39 +1,12 @@
 # Setup McCoy Group config
 title: McCoy Group Notes
 description: References, resources, and tutorials for the study of large amplitude molecular motions
-url: "https://mccoygroup.github.io/References" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://mccoygroup.github.io/Notes" # the base hostname & protocol for your site, e.g. http://example.com
 icon: favicon.png
 github_username:  McCoyGroup
 footer_text: >-
   Brought to you by the McCoy Group at the University of Washington
-#sitemap_depth: 2
-sitemap_roots:
-  - name: McCode Academy
-    url: /McCoy%20Group%20Code%20Academy/
-    listing:
-      - name: Getting Started
-        url: /McCoy%20Group%20Code%20Academy/GettingStarted/
-      - name: NumPy
-        url: /McCoy%20Group%20Code%20Academy/NumPy/
-      - name: Data & IO
-        url: /McCoy%20Group%20Code%20Academy/DataIO/
-      - name: Plotting
-        url: /McCoy%20Group%20Code%20Academy/Plotting/
-      - name: Exercises
-        url: /McCoy%20Group%20Code%20Academy/Exercises/
-      - name: Programming Best-Practices
-        url: /McCoy%20Group%20Code%20Academy/ProgrammingTips/
-  - name: References
-    url: /References/
-    listing:
-      - name: Basis Set Methods
-        url: /References/Basis%20Set%20Methods/
-      - name: Monte Carlo Methods
-        url: /References/Monte%20Carlo%20Methods/
-      - name: Spectrum Generation
-        url: /References/Spectrum%20Generation/
-  - name: Documentation
-    depth: 2
+sitemap_depth: 2
 links:
   - url: https://sites.uw.edu/mccoygrp/
     title: Group Website

@@ -1,6 +1,5 @@
-----
-author: Mark Boyer
-----
+---
+---
 
 # IDEs in Containers
 
@@ -33,7 +32,7 @@ I use a [persistent connection](https://www.cyberciti.biz/faq/linux-unix-reuse-o
 Especially in [2FA](https://authy.com/what-is-2fa/) world, this is nice.
 
 ```console
-Mark$ MCDEFAULT_CONNECTION=~/.ssh/b3m2a1\@mox.hyak.uw.edu 
+Mark$ MCDEFAULT_CONNECTION=~/.ssh/b3m2a1@mox.hyak.uw.edu 
 Mark$ mcssh -h hyak
 Last login: Thu Jan 14 18:19:10 2021
          __  __  _____  __  _  ___   ___   _  __
@@ -128,13 +127,293 @@ Mark$ mcssh -h hyak
 
 Then by going to `http://localhost:8666` in whatever browser we like, we have a working VSCode instance!
 
-![vs-code-screenshot](img/vs-code-screenshot.png)
+![vs-code-screenshot](img/vs-code-screenshot.png){:max-width="700px" width="100%"}
 
 ### Simplifying the Workflow
 
+Once we've gotten VSCode installed and have gotten it running at least once, it's possible to 
+dramatically simplify the amount of work we need to do.
+Just to give a quick preview, at least for Mac users, once we've set up a persistent connection
+we'll be able to just double-click on icon on a local machine and directly open up a VSCode
+instance running on the HPC.
+Since getting this up and running, I've basically abandoned `vim` and do 90% of work through a
+platform that's actually _designed_ for modern software development.
+
+The first thing we'll need is a script that just starts a VSCode instance. Mine looks like
+
+```shell 
+#!/usr/bin/bash
+# vs-server.sh
+# Provides actual call into singularity to make this all happen
+
+module load singularity
+
+VSCODE_STARTDIR="$1"
+VSCODE_PORT="$2"
+VSCODE_PASSWORD="$3"
+
+cd $VSCODE_STARTDIR
+
+export PORT=$VSCODE_PORT
+export PASSWORD=$VSCODE_PASSWORD
+singularity run /gscratch/ilahie/mccoygrp/VSCode/vs-server.sif
+```
+
+You'll notice it's basically the same as what we did on the command line before.
+
+Now we'll set up a little function that will request a node with `srun` and then call this script.
+I set this up to run for a few different node types. 
+You should obviously tailor it for your target use case.
+
+```shell
+VSCODE_PORT=8666
+VSCODE_PASSWORD=""
+VSCODE_NODE=build
+VSCODE_TIME=8:00:00
+VSCODE_STARTDIR=/gscratch/ilahie/mccoygrp/
+VSCODE_INITFILE=/gscratch/ilahie/mccoygrp/VSCode/vs-server.sh
+. /gscratch/ilahie/mccoygrp/moxlib.sh
+
+function vscode_start_server() {
+   local cmd;
+   case $VSCODE_NODE in
+      chem)
+        cmd=chem_node_run
+        ;;
+      ilahie)
+        cmd=ilahie_node_run
+        ;;
+      knl)
+        cmd=knl_node_run
+        ;;
+      gpu)
+        cmd=gpu_node_run
+        ;;
+      backfill)
+        cmd=backfill_node_run
+        ;;
+      *)
+        cmd=build_node_run
+        ;;
+   esac
+
+   $cmd -t $VSCODE_TIME /bin/bash $VSCODE_INITFILE $VSCODE_STARTDIR $VSCODE_PORT $VSCODE_PASSWORD &
+}
+```
+
+Then we can write a little function to connect to a node once we know the node name
+
+```shell
+function vscode_connect_node() {
+  local nodename="$1";
+  
+  echo "Attaching to node $nodename"
+  ssh -N -f -L 127.0.0.1:$VSCODE_PORT:127.0.0.1:$VSCODE_PORT $nodename
+
+}
+```
+
+and one that, given a job ID will query `squeue` repeatedly until it knows what node the job is running on
+
+```shell
+function pull_job_node() {
+  local job="$1";
+  local iterations="$2";
+  local max_iterations=10;
+  local node_list_str;
+  local node_list;
+  local node;
+
+  node_list_str=$(squeue -j $job -o "%.N")
+  IFS=$'\n' read -rd '' -a node_list <<<"$node_list_str"
+  node=${node_list[1]}
+  if (($iterations<$max_iterations)) && [[ "$node" == "" ]]; then
+    # recurse 
+    iterations=$((iterations+1))
+    sleep 1s
+    node=$(pull_job_node $job 0)
+  else
+    echo $node
+  fi
+}
+```
+
+and finally we can string this all together into a little function that can be run from a login
+node to start and connect to a VSCode instance
+
+```shell
+function vscode_start() {
+  local user=$(whoami);
+  local job_list_str;
+  local job_list;
+  local job;
+  local node;
+
+  vscode_start_server
+  sleep 1s
+  job_list_str=$(squeue -u $(whoami) -o "%.i" -S "-i")
+  # pulled from SO https://stackoverflow.com/a/19772067/5720002
+  IFS=$'\n' read -rd '' -a job_list <<<"$job_list_str"
+  job=${job_list[1]}
+  echo "Connecting to job $job"
+  if [[ "$job" == "" ]]; then
+    echo "Done donked up. Connect yourself you slob"
+  else
+    node=$(pull_job_node $job 0)
+    if [[ "$node" == "" ]]; then
+      # pause for 10 seconds then try again
+      echo "No nodes for $job. Connect yourself you slob"
+    else
+      vscode_connect_node $node
+    fi
+  fi
+}
+```
+
+This is all pretty slick. Finally, we can use our persistent `ssh` connection to write a script that will log on to
+our HPC, run this function, attach to the login node, and open the appropriate location in the browser
+
+```shell
+#!/bin/bash
+
+MCDEFAULT_CONNECTION=~/.ssh/b3m2a1@mox.hyak.uw.edu
+mcportforward 8666 -h hyak
+( sleep 1 ; open -a 'Safari' "http://localhost:8666" ) &
+mcssh -h hyak << EOF
+. VSCode/serverlib.sh
+VSCODE_PORT=8666
+vscode_start
+EOF
+```
+
+Stick that in something like `VSCode.command` and at least on macOS, when you double click on the file, the script
+will execute and you'll have VSCode running in your browser.
+
+### Getting a Richer Runtime
+
+One of the great things about containers is that they encourage and simplify incremental improvements to a runtime.
+That is to say, if you want to package extra functionality in with the IDE so you can run stuff from the built-in
+terminal, it's as easy as making a `Dockerfile` that looks like
+
+```Dockerfile
+FROM codr/code-server:latest
+
+RUN pip install <whatever>
+RUN ...
+```
+
+and things will "just work".
+
+### Tunneling to the Node Terminal
+
+The isolation that makes containers great can also be a bit of a drawback in certain types of interactive work.
+Specifically, a common HPC workflow is to create a script that will run for a few hours or days over like 5 nodes,
+then create a job file to submit using `sbatch`.
+Having a nice IDE makes both creating the script and job file easy. 
+Unfortunately, having the nice IDE running in a container means the container doesn't know about `sbatch` or really
+much of anything about the host environment.
+For the most part, this is as we want things, since that means the host environment can't leak in and mess up our
+container runtime.
+And yet, I still really wanted to be able to run things with `sbatch`, so I decided to take a page out of the
+REST API world and create a very simple client/server structure so that I could submit requests from _inside_ the
+container and have them processed _outside_ the container.
+The entire set up, including boiler plate and CLI is ~500 LOC and took ~5 hours to write, just to 
+drive home the point that this is nothing challenging. 
+You can see what I set up [here](https://github.com/McCoyGroup/McEnv/blob/main/slurmdriver.py).
+A more sophisticated or more robust interface could probably have been made using the python [xmlrpc](https://docs.python.org/3/library/xmlrpc.server.html)
+library, and definitely there's some package out there which you could use for this if you wanted to go through the
+work of getting it configured. I'm willing to bet you can also do some kind of port forwarding _into_ this container or something.
+In any case, this was easy and worked for me, but I make no promises that it's optimal.
+
+The idea is basically this. 
+Before entering calling `vscode_start` we can initialize a request server like
+
+```console
+[b3m2a1@n2233 mccoygrp]$ python VSCode/slurmdriver.py --jobdir=/gscratch/ilahie/mccoygrp/people/b3m2a1/jobs
+======================================== STARTING NODE DRIVER ========================================
+```
+
+This will look for requests files in the passed `jobdir` which will be formatted as JSON like
+
+```json
+{
+  "status": "ready",
+  "endpoint": ["sbatch"],
+  "arguments": ["my_script.sh"]
+}
+```
+
+which it will process, running things on a separate [`Thread`](https://docs.python.org/3/library/threading.html#threading.Thread)
+so as to manage a `timeout` and whatnot, and return results in the same file like
+
+```json
+{
+    "endpoint": "sbatch",
+    "arguments": [
+        "my_script.sh"
+    ],
+    "file": "/gscratch/ilahie/mccoygrp/people/b3m2a1/jobs/sbatch_5572416462835591801.json",
+    "status": "error",
+    "output": "sbatch: error: Unable to open file my_script.sh\n"
+}
+```
+
+Next, inside the VSCode instance, when we want to communicate with this server we'll start a client like
 
 
-### Connecting to the Node Terminal
+```console
+b3m2a1@n2233:/gscratch/ilahie/mccoygrp$ python3 VSCode/slurmdriver.py --mode=client  --jobdir=/gscratch/ilahie/mccoygrp/people/b3m2a1/jobs
+========================================STARTING NODE CLIENT========================================
+<api-client> $
+```
 
+which will take command line calls, parse them out, write a JSON request, and wait for a result.
 
- ## Jupyter
+In this way, we can do that `sbatch` call like
+
+```console
+<api-client> $ sbatch my_script.sh
+ERROR (sbatch): sbatch: error: Unable to open file my_script.sh
+```
+
+which provides an emulation of a regular command line.
+
+It's important to note that I explicitly chose to _not_ support arbitrary command line requests, because I only wanted to support what I knew
+would work. To that effect, if you request something that doesn't work you get
+
+```console
+<api-client> $ rm -rf *
+no endpoint rm; valid endpoints ['pwd', 'ls', 'cd', 'sbatch', 'squeue', 'sinfo', 'scancel', 'git', 'stop_server']
+```
+
+and if we `ls` we see that all is well
+
+```console
+<api-client> $ ls
+QOOH
+_mcenv.sif
+archive
+RynLib
+clean_permissions.sh
+...
+mcenv.sif
+VSCode
+data
+GoogleDrive
+scripts
+packages
+```
+
+## Jupyter
+
+Everything I showed before can work _just as well_ if you have a container that can start a Jupyter server.
+I made one that works for my purposes [here](https://github.com/McCoyGroup/McEnv).
+If you set up the server to listen on `8899` you can make the same set of scripts as before and all will be
+well in the world. 
+Once you get that up and running, you can run JupyterLab in the browser with a double-click, which gives a
+rich prototyping interface before you set up your `sbatch` jobs.
+
+![jupyter-screenshot](img/jupyter-screenshot.png){:max-width="700px" width="100%"}
+
+---
+[Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/gh-pages/notes/ContainerIDEs.md)
