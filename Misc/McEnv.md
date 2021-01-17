@@ -40,7 +40,7 @@ We just tried different approaches until we found one that worked for us.
 ### MPI
 
 This is the most involved part of the process. 
-MPI comes in two flavors, [OpenMPI]() and [MPICH]().
+MPI comes in two flavors, [OpenMPI](https://www.open-mpi.org/) and [MPICH](https://www.mpich.org/).
 I think this is a historical thing but it's super annoying.
 Similarly annoyingly, there's no _de facto_ standard and when one uses `singularity` or `shifter`
 the MPI build and version on the host system has to match the one inside. It's a whole thing.
@@ -156,6 +156,23 @@ like getting simple molecular animations
 
 ![animate vib](img/mox_animation.gif){:max-width="500px" width="100%"}
 
+## Building with GitHub
+
+We're making use of GitHub's very, very useful [GitHub Actions]() framework to manage builds.
+I won't detail _how_ actions work here. Instead I'll just point out a few reasons _why_ they're nice
+
+1. They allow you to test your code every time you push changes
+2. They allow you to build images or documentation every time you push changes
+3. You can commit changes from _inside_ an action
+4. You can run different actions on different branches
+
+We can make use of **2** and **4** to build different variants of our containers.
+By creating a branch `mpich-3.1.4`, or something like that, we can then edit the `Dockerfile` for that
+branch specifically, e.g. to use `MPICH` instead of `OpenMPI`
+The action will then build, tag, and push that variant specifically.
+
+It's worth noting that this variability can be configured for _any_ type of action.
+This is in no way restricted to just building Docker images.
 
 ---
 [Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/master/Misc/McEnv.md)
