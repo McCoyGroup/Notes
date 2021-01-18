@@ -14,6 +14,7 @@ for ease of sharing.
 
 * [IDEs in Container Land](Misc/ContainerIDEs.md)
 * [McEnv, a Simple Environment Container](Misc/McEnv.md)
+* [Better State Indexing](Misc/PermutationsStateIndexing.md)
 
 ---
 [Edit on GitHub](https://github.com/McCoyGroup/Notes/edit/master/index.md)
