@@ -109,11 +109,11 @@ So what need to do is order the _unique_ permutations of the sorted permutation.
 To do this we build a tree describing how to get to each permutation successively. 
 I've show this for the permutations of $(2, 1, 0, 0, 0)$ below
 
-![perm tree](img/partition_tree.png)
+![perm tree](img/partition_tree.png){:max-width="500px" width="100%"}
 
 Then on this tree, to get to the permutation $(1, 0, 2, 0, 0)$ we'd walk through the tree like
 
-![annotate tree](img/partition_tree_annotate.png)
+![annotate tree](img/partition_tree_annotate.png){:max-width="500px" width="100%"}
 
 and by counting the nodes to the left of that permutation we can see that it is in fact the 6th partition.
 

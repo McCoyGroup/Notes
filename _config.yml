@@ -34,6 +34,8 @@ defaults:
     values:
       layout: "post"
       image: "https://mccoygroup.github.io/References/img/logo_m.png"
+      optional_scripts: true
+      custom_styles: "refs"
   - scope:
       path: "index.html|about.html|404.html|search.html"
     values:
